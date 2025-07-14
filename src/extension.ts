@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -23,20 +24,28 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register a new command to show a webview with custom HTML/CSS
 	let webviewDisposable = vscode.commands.registerCommand('vscode-textcrawl.showWebview', () => {
-		// Create and show a new webview panel
+		// Start playing audio immediately
+		startAudioPlayback(context.extensionUri);
+		
+		// Create and show a new webview panel in a new window
 		const panel = vscode.window.createWebviewPanel(
 			'textcrawlWebview', // Identifies the type of the webview. Used internally
-			'TextCrawl Custom Page', // Title of the panel displayed to the user
-			vscode.ViewColumn.One, // Editor column to show the new webview panel in
+			'Star Wars Text Crawl', // Title of the panel displayed to the user
+			{
+				viewColumn: vscode.ViewColumn.One,
+				preserveFocus: false
+			}, // Open in new editor group
 			{
 				// Enable scripts in the webview
 				enableScripts: true,
 				// Restrict the webview to only loading content from our workspace
-				localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
+				localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')],
+				// Retain context when hidden
+				retainContextWhenHidden: true
 			}
 		);
 
-		// Set the HTML content for the webview
+		// Set the HTML content for the webview (without audio controls)
 		panel.webview.html = getWebviewContent(panel.webview, context.extensionUri);
 
 		// Handle messages from the webview (optional)
@@ -46,11 +55,19 @@ export function activate(context: vscode.ExtensionContext) {
 					case 'alert':
 						vscode.window.showInformationMessage(message.text);
 						return;
+					case 'stopAudio':
+						stopAudioPlayback();
+						return;
 				}
 			},
 			undefined,
 			context.subscriptions
 		);
+		
+		// Stop audio when panel is closed
+		panel.onDidDispose(() => {
+			stopAudioPlayback();
+		});
 	});
 
 	context.subscriptions.push(disposable, webviewDisposable);
@@ -62,10 +79,6 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
 	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'styles.css'));
 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'script.js'));
 	
-	// Get URIs for audio files (with fallback if files don't exist)
-	const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'audio', 'background.mp3'));
-	const audioUriOgg = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'audio', 'background.ogg'));
-	
 	// Read the HTML template
 	const htmlPath = path.join(extensionUri.fsPath, 'media', 'webview.html');
 	let htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -73,10 +86,86 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
 	// Replace placeholders with actual URIs
 	htmlContent = htmlContent.replace('{{STYLE_URI}}', styleUri.toString());
 	htmlContent = htmlContent.replace('{{SCRIPT_URI}}', scriptUri.toString());
-	htmlContent = htmlContent.replace('{{AUDIO_URI}}', audioUri.toString());
-	htmlContent = htmlContent.replace('{{AUDIO_URI_OGG}}', audioUriOgg.toString());
 	
 	return htmlContent;
+}
+
+// Global variable to track audio process
+let audioProcess: any = null;
+
+// Function to start audio playback using system commands
+function startAudioPlayback(extensionUri: vscode.Uri) {
+	// Stop any existing audio first
+	stopAudioPlayback();
+	
+	const audioPath = path.join(extensionUri.fsPath, 'media', 'audio', 'background.mp3');
+	
+	// Check if audio file exists
+	if (fs.existsSync(audioPath)) {
+		console.log(`Found audio file at: ${audioPath}`);
+		
+		// Use system-specific audio player
+		const platform = process.platform;
+		let command = '';
+		
+		if (platform === 'darwin') {
+			// macOS - simplified command without infinite loops for now
+			command = `afplay "${audioPath}"`;
+		} else if (platform === 'win32') {
+			// Windows
+			command = `powershell -c "(New-Object Media.SoundPlayer '${audioPath}').PlaySync()"`;
+		} else {
+			// Linux
+			command = `aplay "${audioPath}"`;
+		}
+		
+		console.log(`Executing audio command: ${command}`);
+		
+		audioProcess = exec(command, (error, stdout, stderr) => {
+			if (error) {
+				console.error('Audio playback error:', error.message);
+				console.error('stderr:', stderr);
+				vscode.window.showErrorMessage(`Audio playback failed: ${error.message}`);
+			} else {
+				console.log('Audio command completed successfully');
+				// For macOS, restart the audio to loop
+				if (platform === 'darwin') {
+					setTimeout(() => {
+						if (audioProcess) {
+							startAudioPlayback(extensionUri);
+						}
+					}, 1000);
+				}
+			}
+		});
+		
+		// Set up process event handlers
+		if (audioProcess) {
+			audioProcess.on('spawn', () => {
+				console.log('Audio process spawned successfully');
+				vscode.window.showInformationMessage('🎵 Star Wars music started!');
+			});
+			
+			audioProcess.on('error', (error: Error) => {
+				console.error('Audio process error:', error);
+				vscode.window.showErrorMessage(`Audio process error: ${error.message}`);
+			});
+		}
+		
+	} else {
+		const message = `Audio file not found at: ${audioPath}`;
+		console.error(message);
+		vscode.window.showWarningMessage('Audio file not found. Please add background.mp3 to media/audio/');
+	}
+}
+
+// Function to stop audio playback
+function stopAudioPlayback() {
+	if (audioProcess) {
+		audioProcess.kill();
+		audioProcess = null;
+		console.log('Audio playback stopped');
+	}
 }
 
 // This method is called when your extension is deactivated
