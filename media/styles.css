@@ -57,98 +57,57 @@ body {
   }
 }
 
-/* Audio Controls Styles */
-.audio-controls {
+/* Start overlay styles */
+.start-overlay {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1000;
-  background: rgba(0, 0, 0, 0.8);
-  padding: 15px;
-  border-radius: 10px;
-  border: 2px solid #feda4a;
-  box-shadow: 0 0 20px rgba(254, 218, 74, 0.3);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
+  z-index: 9999;
+  cursor: pointer;
   backdrop-filter: blur(5px);
 }
 
-.audio-btn {
-  background: linear-gradient(45deg, #feda4a, #f4d03f);
-  color: #000;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.audio-btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(254, 218, 74, 0.6);
-  background: linear-gradient(45deg, #f4d03f, #feda4a);
-}
-
-.audio-btn:active {
-  transform: scale(0.95);
-}
-
-.volume-slider {
-  width: 80px;
-  height: 5px;
-  background: #333;
-  outline: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 15px;
-  height: 15px;
-  background: #feda4a;
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(254, 218, 74, 0.5);
-}
-
-.volume-slider::-moz-range-thumb {
-  width: 15px;
-  height: 15px;
-  background: #feda4a;
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 0 10px rgba(254, 218, 74, 0.5);
-}
-
-.volume-label {
+.start-content {
+  text-align: center;
   color: #feda4a;
-  font-size: 12px;
-  font-weight: bold;
-  min-width: 50px;
+  font-family: 'Pathway Gothic One', sans-serif;
 }
 
-/* Responsive design for smaller screens */
-@media (max-width: 768px) {
-  .audio-controls {
-    top: 10px;
-    right: 10px;
-    padding: 10px;
-    flex-direction: column;
-    gap: 8px;
+.start-content h2 {
+  font-size: 3em;
+  margin-bottom: 20px;
+  text-shadow: 0 0 20px #feda4a;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.start-content p {
+  font-size: 1.5em;
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+
+.start-hint {
+  font-size: 1em;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 20px #feda4a, 0 0 30px #feda4a, 0 0 40px #feda4a;
   }
-  
-  .audio-btn {
-    padding: 6px 12px;
-    font-size: 12px;
+  to {
+    text-shadow: 0 0 10px #feda4a, 0 0 20px #feda4a, 0 0 30px #feda4a;
   }
-  
-  .volume-slider {
-    width: 60px;
-  }
+}
+
+/* Hide overlay when started */
+.start-overlay.hidden {
+  display: none;
 }

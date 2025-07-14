@@ -9,18 +9,18 @@
 </head>
 
 <body>
-    <div class="fade"></div>
-
-    <!-- Audio Controls -->
-    <div class="audio-controls">
-        <button id="playButton" class="audio-btn">🔊 Play Music</button>
-        <button id="stopButton" class="audio-btn">⏹️ Stop</button>
-        <input type="range" id="volumeSlider" min="0" max="100" value="50" class="volume-slider">
-        <span class="volume-label">Volume</span>
+    <!-- Click to start overlay -->
+    <div id="startOverlay" class="start-overlay">
+        <div class="start-content">
+            <h2>An error occurred</h2>
+            <p>Click to reveal</p>
+        </div>
     </div>
 
+    <div class="fade"></div>
+
     <!-- Hidden audio elements -->
-    <audio id="backgroundMusic" loop>
+    <audio id="backgroundMusic" loop preload="auto">
         <source src="{{AUDIO_URI}}" type="audio/mpeg">
         <source src="{{AUDIO_URI_OGG}}" type="audio/ogg">
         Your browser does not support the audio element.

@@ -43,117 +43,137 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 });
 
-// Audio functionality
+// Audio autoplay functionality with user interaction
 document.addEventListener('DOMContentLoaded', function() {
     const audioElement = document.getElementById('backgroundMusic');
-    const playButton = document.getElementById('playButton');
-    const stopButton = document.getElementById('stopButton');
-    const volumeSlider = document.getElementById('volumeSlider');
+    const startOverlay = document.getElementById('startOverlay');
+    let audioStarted = false;
     
-    // Set initial volume
-    if (audioElement) {
-        audioElement.volume = 0.5;
+    // Handle the start overlay click
+    if (startOverlay) {
+        startOverlay.addEventListener('click', function() {
+            startAudioExperience();
+        });
         
-        // Play button functionality
-        playButton.addEventListener('click', function() {
-            if (audioElement.paused) {
-                audioElement.play().then(() => {
-                    playButton.textContent = '⏸️ Pause';
-                    console.log('Audio started playing');
+        // Also allow keyboard interaction
+        document.addEventListener('keydown', function(e) {
+            if (!audioStarted) {
+                startAudioExperience();
+            }
+        });
+    }
+    
+    function startAudioExperience() {
+        if (audioStarted) {
+            return;
+        }
+        audioStarted = true;
+        
+        // Hide the overlay
+        startOverlay.classList.add('hidden');
+        
+        if (audioElement) {
+            // Set volume to a comfortable level
+            audioElement.volume = 0.4;
+            
+            // Try to play the audio
+            const playPromise = audioElement.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Audio started playing successfully');
                 }).catch(error => {
-                    console.error('Error playing audio:', error);
-                    // Fallback: try to play a generated tone
-                    playGeneratedTone();
+                    console.log('Audio file not available, using generated music:', error);
+                    playGeneratedMusic();
                 });
             } else {
-                audioElement.pause();
-                playButton.textContent = '🔊 Play Music';
+                // Fallback for older browsers
+                setTimeout(() => {
+                    if (audioElement.paused) {
+                        console.log('Audio file not available, using generated music');
+                        playGeneratedMusic();
+                    }
+                }, 1000);
+            }
+        } else {
+            console.log('No audio element found, using generated music');
+            playGeneratedMusic();
+        }
+    }
+    
+    // Enhanced audio error handling
+    if (audioElement) {
+        audioElement.addEventListener('error', function(e) {
+            console.log('Audio error occurred:', e);
+            if (audioStarted) {
+                playGeneratedMusic();
             }
         });
         
-        // Stop button functionality
-        stopButton.addEventListener('click', function() {
-            audioElement.pause();
-            audioElement.currentTime = 0;
-            playButton.textContent = '🔊 Play Music';
-        });
-        
-        // Volume control
-        volumeSlider.addEventListener('input', function() {
-            audioElement.volume = this.value / 100;
-        });
-        
-        // Audio event listeners
-        audioElement.addEventListener('play', function() {
-            playButton.textContent = '⏸️ Pause';
-        });
-        
-        audioElement.addEventListener('pause', function() {
-            playButton.textContent = '🔊 Play Music';
-        });
-        
-        audioElement.addEventListener('ended', function() {
-            playButton.textContent = '🔊 Play Music';
+        audioElement.addEventListener('canplay', function() {
+            console.log('Audio file loaded and ready');
         });
     }
 });
 
-// Generate a simple tone using Web Audio API if no audio file is available
-function playGeneratedTone() {
+// Generate a continuous Star Wars-like theme using Web Audio API
+function playGeneratedMusic() {
     try {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
         
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        // Create a more elaborate Star Wars-inspired theme
+        function createNote(frequency, startTime, duration, volume = 0.1, waveType = 'sine') {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+            oscillator.type = waveType;
+            
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.1);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        }
         
-        // Create a simple Star Wars-like fanfare
-        oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A note
-        oscillator.frequency.setValueAtTime(554.37, audioContext.currentTime + 0.5); // C# note
-        oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 1.0); // E note
+        // Main theme melody (simplified Star Wars main theme rhythm)
+        const playTheme = (startTime) => {
+            // Main fanfare
+            createNote(392, startTime, 1.5, 0.15); // G
+            createNote(392, startTime + 1.5, 1.5, 0.15); // G
+            createNote(392, startTime + 3, 1.5, 0.15); // G
+            createNote(311.13, startTime + 4.5, 2, 0.2); // Eb
+            createNote(466.16, startTime + 6, 0.5, 0.15); // Bb
+            
+            createNote(392, startTime + 6.5, 1.5, 0.15); // G
+            createNote(311.13, startTime + 8, 2, 0.2); // Eb
+            createNote(466.16, startTime + 9.5, 0.5, 0.15); // Bb
+            createNote(392, startTime + 10, 3, 0.2); // G
+        };
         
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+        // Play the theme and loop it
+        const themeDuration = 13;
+        let currentTime = audioContext.currentTime;
         
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 2);
+        // Play multiple iterations
+        for (let i = 0; i < 10; i++) {
+            playTheme(currentTime + (i * themeDuration));
+        }
         
-        console.log('Playing generated tone');
+        console.log('Playing generated Star Wars-style theme music');
+        
+        // Schedule the next loop
+        setTimeout(() => {
+            if (audioContext.state === 'running') {
+                playGeneratedMusic();
+            }
+        }, themeDuration * 10 * 1000);
+        
     } catch (error) {
         console.error('Error with Web Audio API:', error);
     }
 }
-
-// Add keyboard shortcuts for audio control
-document.addEventListener('keydown', function(event) {
-    const audioElement = document.getElementById('backgroundMusic');
-    if (!audioElement) {
-        return;
-    }
-    
-    switch(event.code) {
-        case 'Space':
-            event.preventDefault();
-            if (audioElement.paused) {
-                audioElement.play();
-            } else {
-                audioElement.pause();
-            }
-            break;
-        case 'KeyM':
-            event.preventDefault();
-            audioElement.muted = !audioElement.muted;
-            break;
-        case 'ArrowUp':
-            event.preventDefault();
-            audioElement.volume = Math.min(1, audioElement.volume + 0.1);
-            document.getElementById('volumeSlider').value = audioElement.volume * 100;
-            break;
-        case 'ArrowDown':
-            event.preventDefault();
-            audioElement.volume = Math.max(0, audioElement.volume - 0.1);
-            document.getElementById('volumeSlider').value = audioElement.volume * 100;
-            break;
-    }
-});
