@@ -92,11 +92,15 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
 
 // Global variable to track audio process
 let audioProcess: any = null;
+let isAudioStopped = false; // Flag to prevent restart after manual stop
 
 // Function to start audio playback using system commands
 function startAudioPlayback(extensionUri: vscode.Uri) {
 	// Stop any existing audio first
 	stopAudioPlayback();
+	
+	// Reset the stop flag when starting new audio
+	isAudioStopped = false;
 	
 	const audioPath = path.join(extensionUri.fsPath, 'media', 'audio', 'background.mp3');
 	
@@ -123,15 +127,18 @@ function startAudioPlayback(extensionUri: vscode.Uri) {
 		
 		audioProcess = exec(command, (error, stdout, stderr) => {
 			if (error) {
-				console.error('Audio playback error:', error.message);
-				console.error('stderr:', stderr);
-				vscode.window.showErrorMessage(`Audio playback failed: ${error.message}`);
+				// Only show error if it's not due to manual stopping
+				if (!isAudioStopped) {
+					console.error('Audio playback error:', error.message);
+					console.error('stderr:', stderr);
+					vscode.window.showErrorMessage(`Audio playback failed: ${error.message}`);
+				}
 			} else {
 				console.log('Audio command completed successfully');
-				// For macOS, restart the audio to loop
-				if (platform === 'darwin') {
+				// For macOS, restart the audio to loop (only if not manually stopped)
+				if (platform === 'darwin' && !isAudioStopped) {
 					setTimeout(() => {
-						if (audioProcess) {
+						if (audioProcess && !isAudioStopped) {
 							startAudioPlayback(extensionUri);
 						}
 					}, 1000);
@@ -147,8 +154,11 @@ function startAudioPlayback(extensionUri: vscode.Uri) {
 			});
 			
 			audioProcess.on('error', (error: Error) => {
-				console.error('Audio process error:', error);
-				vscode.window.showErrorMessage(`Audio process error: ${error.message}`);
+				// Only show error if it's not due to manual stopping
+				if (!isAudioStopped) {
+					console.error('Audio process error:', error);
+					vscode.window.showErrorMessage(`Audio process error: ${error.message}`);
+				}
 			});
 		}
 		
@@ -161,10 +171,11 @@ function startAudioPlayback(extensionUri: vscode.Uri) {
 
 // Function to stop audio playback
 function stopAudioPlayback() {
+	isAudioStopped = true; // Set flag to prevent restart
 	if (audioProcess) {
-		audioProcess.kill();
+		audioProcess.kill('SIGTERM'); // Use SIGTERM for graceful termination
 		audioProcess = null;
-		console.log('Audio playback stopped');
+		console.log('Audio playback stopped gracefully');
 	}
 }
 
