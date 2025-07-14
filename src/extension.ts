@@ -62,6 +62,10 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
 	const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'styles.css'));
 	const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'script.js'));
 	
+	// Get URIs for audio files (with fallback if files don't exist)
+	const audioUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'audio', 'background.mp3'));
+	const audioUriOgg = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'audio', 'background.ogg'));
+	
 	// Read the HTML template
 	const htmlPath = path.join(extensionUri.fsPath, 'media', 'webview.html');
 	let htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -69,6 +73,8 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
 	// Replace placeholders with actual URIs
 	htmlContent = htmlContent.replace('{{STYLE_URI}}', styleUri.toString());
 	htmlContent = htmlContent.replace('{{SCRIPT_URI}}', scriptUri.toString());
+	htmlContent = htmlContent.replace('{{AUDIO_URI}}', audioUri.toString());
+	htmlContent = htmlContent.replace('{{AUDIO_URI_OGG}}', audioUriOgg.toString());
 	
 	return htmlContent;
 }
