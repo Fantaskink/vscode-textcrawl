@@ -16,6 +16,10 @@
       {
         "command": "vscode-textcrawl.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "vscode-textcrawl.showWebview",
+        "title": "Show TextCrawl Custom Page"
       }
     ]
   },
